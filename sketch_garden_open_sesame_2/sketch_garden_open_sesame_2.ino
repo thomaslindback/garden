@@ -116,6 +116,8 @@ void loop() {
         byte isOpen = btn_open.read();
         if(isOpen == LOW) {
           state = OPEN;
+        } else if(state != TAKE_MEASUREMENT || state != AUTO_OPEN) {
+          state = DO_NOTHING;
         }
       }      
     }
