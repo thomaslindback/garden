@@ -109,11 +109,6 @@ void loop() {
         if(isOpen == LOW) {
           state = OPEN;
         }
-        else {
-          if(state != TAKE_MEASUREMENT) {
-            state = DO_NOTHING;
-          }
-        }
       }      
     }
   }
@@ -124,6 +119,8 @@ void loop() {
           break;
         case ALL_STOP:
           stepsTaken = 0;
+          current_expance = 0;
+          current_step = 0;
           state = DO_NOTHING;
           break;
         case AUTO_OPEN:
@@ -160,16 +157,22 @@ void loop() {
             if(temp < 25 && current_expance == 0) {
               state = AUTO_OPEN;
             }
-            if(temp < 30 && current_expance <= 1)  {
+            else if(temp < 30 && current_expance <= 1)  {
               state = AUTO_OPEN;
             } 
-            if(temp > 30 && current_expance <= 2)  {
+            else if(temp > 30 && current_expance <= 2)  {
               state = AUTO_OPEN;
             } 
             else {
               state = DO_NOTHING;
             }
           }
+          Serial.print("State: ");
+          Serial.println(state);
+          Serial.print("Current step: ");
+          Serial.println(current_step);
+          Serial.print("Current expance: ");
+          Serial.println(current_expance);
           
           break;
         case CLOSE: 
@@ -177,6 +180,11 @@ void loop() {
           ;  
           break;
         case OPEN: 
+          current_step++;
+          if(current_step >= 20000) {
+            current_step = 0;
+            current_expance++;
+          }
           stepper.step(1);
           ;   
           break;
