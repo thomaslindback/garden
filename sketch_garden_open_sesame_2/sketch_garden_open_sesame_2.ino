@@ -20,7 +20,7 @@ enum State: byte { DO_NOTHING, TAKE_MEASUREMENT, ALL_STOP, CLOSE, OPEN, AUTO_OPE
 float hum;  // Stores humidity value
 float temp; // Stores temperature value
 
-volatile byte timer_times = 0;
+volatile unsigned int timer_times = 0;
 
 // 200 steps = 1 turn
 // 10 turns = 12.5 cm
@@ -77,9 +77,9 @@ void setup() {
   sei();
 }
 
-ISR(TIMER1_COMPA_vect){//timer1 interrupt 1Hz toggles pin 13 (LED)
+ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
   timer_times++;
-  if(timer_times >= 5 && state == DO_NOTHING) {
+  if(timer_times >= 300 && state == DO_NOTHING) {
     eventTime = millis();
     state = TAKE_MEASUREMENT;
     timer_times = 0;
@@ -133,6 +133,8 @@ void loop() {
             } else {
               stepper.step(1);
             }
+          } else {
+            state = DO_NOTHING;
           }
           break;
         case TAKE_MEASUREMENT: 
