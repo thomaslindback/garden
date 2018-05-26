@@ -79,10 +79,12 @@ void setup() {
 
 ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
   timer_times++;
-  if(timer_times >= 300 && state == DO_NOTHING) {
+  Serial.print(".");
+  if(timer_times >= 60 && state == DO_NOTHING) {
     eventTime = millis();
     state = TAKE_MEASUREMENT;
     timer_times = 0;
+    Serial.println("time");
   }
 }
 
@@ -116,7 +118,11 @@ void loop() {
         byte isOpen = btn_open.read();
         if(isOpen == LOW) {
           state = OPEN;
-        } else if(state != TAKE_MEASUREMENT || state != AUTO_OPEN) {
+        } else if(state == TAKE_MEASUREMENT) {
+          state = TAKE_MEASUREMENT;
+        } else if(state == AUTO_OPEN) {
+          state = AUTO_OPEN;
+        } else {
           state = DO_NOTHING;
         }
       }      
