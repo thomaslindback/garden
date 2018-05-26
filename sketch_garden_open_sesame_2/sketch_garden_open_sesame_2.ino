@@ -86,6 +86,14 @@ ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
   }
 }
 
+bool is_between(double value, byte lower, byte upper) {
+  if(value > lower && value <= upper) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void loop() {
   btn_all_stop.update();
   btn_close.update();
@@ -153,13 +161,13 @@ void loop() {
           Serial.print(temp);
           Serial.println(" Celsius");
 
-          if(temp < 20) {
+          if(temp <= 20) {
             state = CLOSE;            
           } else {
-            if(temp < 25 && current_expance == 0) {
+            if(is_between(temp, 20, 25) && current_expance == 0) {
               state = AUTO_OPEN;
             }
-            else if(temp < 30 && current_expance <= 1)  {
+            else if(is_between(temp, 25, 30) && current_expance <= 1)  {
               state = AUTO_OPEN;
             } 
             else if(temp > 30 && current_expance <= 2)  {
