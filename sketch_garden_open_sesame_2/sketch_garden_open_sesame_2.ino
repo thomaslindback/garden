@@ -28,13 +28,13 @@ volatile unsigned int timer_times = 0;
 int current_step = 0;
 byte current_expance = 0;
 const byte MAX_EXPANCES = 3;
+const int STEPS_PER_EXPANCE = 20000;
+const unsigned int TOTAL_MAXIMUM_STEPS = 60000;
+unsigned int current_total_step = 0;
 
 volatile long unsigned eventTime;
 volatile long unsigned previousEventTime;
 volatile long unsigned timeSinceLastEvent;
-
-long stepsTaken  = 0;
-const long maximumRevolutions = STEPS_PER_REVOLUTION * 200;
 
 State state = DO_NOTHING;
 Stepper stepper(STEPS_PER_REVOLUTION, 3, 4, 5, 6);
@@ -42,6 +42,8 @@ DHT dht(DHTPIN, DHTTYPE); //// Initialize DHT sensor for normal 16mhz Arduino
 Bounce btn_all_stop = Bounce(); 
 Bounce btn_close = Bounce(); 
 Bounce btn_open = Bounce(); 
+
+bool all_stop_handled = false;
 
 void setup() {
   Serial.begin(9600);
@@ -79,21 +81,15 @@ void setup() {
 
 ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
   timer_times++;
-  Serial.print(".");
   if(timer_times >= 60 && state == DO_NOTHING) {
     eventTime = millis();
     state = TAKE_MEASUREMENT;
     timer_times = 0;
-    Serial.println("time");
   }
 }
 
-bool is_between(double value, byte lower, byte upper) {
-  if(value > lower && value <= upper) {
-    return true;
-  } else {
-    return false;
-  }
+bool is_between(float value, byte lower, byte upper) {
+  return value > lower && value <= upper;
 }
 
 void loop() {
@@ -101,54 +97,56 @@ void loop() {
   btn_close.update();
   btn_open.update();
 
-  byte isAllStop = btn_all_stop.read();
-  if(isAllStop == LOW) {
+  bool isAllStop = btn_all_stop.read();
+  if(isAllStop == LOW && !all_stop_handled) {
     state = ALL_STOP;
   }
   else {
-    if(state == CLOSE) {
+    bool isClose = btn_close.read();
+    if(isClose == LOW) {
       state = CLOSE;
-    }
-    else {
-      byte isClose = btn_close.read();
-      if(isClose == LOW) {
-        state = CLOSE;
-      }
-      else {
-        byte isOpen = btn_open.read();
-        if(isOpen == LOW) {
-          state = OPEN;
-        } else if(state == TAKE_MEASUREMENT) {
-          state = TAKE_MEASUREMENT;
-        } else if(state == AUTO_OPEN) {
-          state = AUTO_OPEN;
-        } else {
-          state = DO_NOTHING;
-        }
-      }      
+    } else {
+      bool isOpen = btn_open.read();
+      if(isOpen == LOW) {
+        state = OPEN;
+      } else if (state != TAKE_MEASUREMENT && state != AUTO_OPEN) {
+        state = DO_NOTHING;
+      }     
     }
   }
+
+  // sanity check
+  if(state == OPEN && current_total_step >= TOTAL_MAXIMUM_STEPS) {
+    state = DO_NOTHING;    
+  }
+  if(state == AUTO_OPEN && current_total_step >= TOTAL_MAXIMUM_STEPS) {
+    state = DO_NOTHING;    
+  }
+  
   switch(state)
     {
         case DO_NOTHING:
           ;    
           break;
         case ALL_STOP:
-          stepsTaken = 0;
           current_expance = 0;
           current_step = 0;
+          all_stop_handled = true;
+          current_total_step = 0;
           state = DO_NOTHING;
           break;
         case AUTO_OPEN:
           if(current_expance < MAX_EXPANCES) {
             current_step++;
-            if(current_step >= 20000) {
+            if(current_step >= STEPS_PER_EXPANCE) {
               current_step = 0;
               current_expance++;
               state = DO_NOTHING; 
             } else {
+              current_total_step++;
               stepper.step(1);
             }
+            all_stop_handled = true;
           } else {
             state = DO_NOTHING;
           }
@@ -194,17 +192,18 @@ void loop() {
           
           break;
         case CLOSE: 
+          current_total_step--;
           stepper.step(-1);
-          ;  
           break;
         case OPEN: 
           current_step++;
-          if(current_step >= 20000) {
+          if(current_step >= STEPS_PER_EXPANCE) {
             current_step = 0;
             current_expance++;
           }
+          current_total_step++;
           stepper.step(1);
-          ;   
+          all_stop_handled = true;
           break;
         default: 
           ;
