@@ -3,23 +3,27 @@
         {
             "name": "Linux",
             "includePath": [
-                "/media/home/thomas/.arduino15/packages/arduino/hardware/avr/1.6.21/cores/arduino",
                 "${workspaceRoot}",
-                "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/tools",
-                "/media/home/thomas/dev/embed/arduino-1.8.5/libraries",
-                "/media/home/thomas/Documents/Arduino/hardware/tools",
-                "/media/home/thomas/Documents/Arduino/libraries"
+                "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/arduino/avr/cores/arduino",
+                "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/tools/avr/avr/include/avr",
+                "/media/home/thomas/Arduino/hardware/tools",
+                "/media/home/thomas/Arduino/libraries",
+                "/media/home/thomas/Arduino/libraries/Bounce2/src",
+                "/media/home/thomas/Arduino/libraries/DHT-sensor",
+                "/media/home/thomas/dev/embed/arduino-1.8.5/libraries/Stepper/src"
             ],
             "browse": {
                 "path": [
-                    "/media/home/thomas/.arduino15/packages/arduino/hardware/avr/1.6.21/cores/arduino",
                     "${workspaceRoot}",
-                    "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/tools",
-                    "/media/home/thomas/dev/embed/arduino-1.8.5/libraries",
-                    "/media/home/thomas/Documents/Arduino/hardware/tools",
-                    "/media/home/thomas/Documents/Arduino/libraries"
+                    "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/arduino/avr/cores/arduino",
+                    "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/tools/avr/avr/include/avr",
+                    "/media/home/thomas/Arduino/hardware/tools",
+                    "/media/home/thomas/Arduino/libraries",
+                    "/media/home/thomas/Arduino/libraries/Bounce2/src",
+                    "/media/home/thomas/Arduino/libraries/DHT-sensor",
+                    "/media/home/thomas/dev/embed/arduino-1.8.5/libraries/Stepper/src"
                 ],
-                "limitSymbolsToIncludedHeaders": false
+                "limitSymbolsToIncludedHeaders": true
             },
             "defines": [
                 "F_CPU=16000000L",

@@ -1,5 +1,3 @@
-#include <Arduino.h>
-
 #include <Bounce2.h>
 #include <DHT.h>
 #include <Stepper.h>
@@ -90,7 +88,7 @@ ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
   }
 }
 
-bool is_between(float value, byte lower, byte upper) {
+bool is_between(float value, float lower, float upper) {
   return value > lower && value <= upper;
 }
 
@@ -173,16 +171,16 @@ void loop() {
           Serial.print(temp);
           Serial.println(" Celsius");
 
-          if(temp <= 20) {
+          if(temp <= 20.0) {
             state = CLOSE;            
           } else {
-            if(is_between(temp, 20, 25) && current_expance == 0) {
+            if(is_between(temp, 20.0, 25.0) && current_expance == 0) {
               state = AUTO_OPEN;
             }
-            else if(is_between(temp, 25, 30) && current_expance <= 1)  {
+            else if(is_between(temp, 25.0, 30.0) && current_expance <= 1)  {
               state = AUTO_OPEN;
             } 
-            else if(temp > 30 && current_expance <= 2)  {
+            else if(temp > 30.0 && current_expance <= 2)  {
               state = AUTO_OPEN;
             } 
             else {
