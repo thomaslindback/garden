@@ -1,5 +1,7 @@
+#include <Arduino.h>
+
 #include <Bounce2.h>
-#include <DHT.h>;
+#include <DHT.h>
 #include <Stepper.h>
 
 const int STEPS_PER_REVOLUTION = 200;
@@ -109,7 +111,11 @@ void loop() {
       bool isOpen = btn_open.read();
       if(isOpen == LOW) {
         state = OPEN;
-      } else if (state != TAKE_MEASUREMENT && state != AUTO_OPEN) {
+      } else if (state == TAKE_MEASUREMENT) {
+        state = TAKE_MEASUREMENT;
+      } else if(state == AUTO_OPEN) {
+        state = AUTO_OPEN;
+      } else {
         state = DO_NOTHING;
       }     
     }
