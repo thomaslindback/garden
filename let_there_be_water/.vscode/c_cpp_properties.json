@@ -3,8 +3,11 @@
         {
             "name": "Linux",
             "includePath": [
+                "/media/home/thomas/.arduino15/packages/adafruit/hardware/avr/1.4.12/variants/tiny8",
+                "/media/home/thomas/.arduino15/packages/arduino/tools/avr-gcc/4.9.2-atmel3.5.4-arduino2/avr/include",
                 "/media/home/thomas/.arduino15/packages/arduino/hardware/avr/1.6.21/cores/arduino",
                 "${workspaceRoot}",
+                "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/arduino/avr/cores/arduino",
                 "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/tools",
                 "/media/home/thomas/dev/embed/arduino-1.8.5/libraries",
                 "/media/home/thomas/Documents/Arduino/hardware/tools",
@@ -12,8 +15,11 @@
             ],
             "browse": {
                 "path": [
+                    "/media/home/thomas/.arduino15/packages/adafruit/hardware/avr/1.4.12/variants/tiny8",
+                    "/media/home/thomas/.arduino15/packages/arduino/tools/avr-gcc/4.9.2-atmel3.5.4-arduino2/avr/include",
                     "/media/home/thomas/.arduino15/packages/arduino/hardware/avr/1.6.21/cores/arduino",
                     "${workspaceRoot}",
+                    "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/arduino/avr/cores/arduino",
                     "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/tools",
                     "/media/home/thomas/dev/embed/arduino-1.8.5/libraries",
                     "/media/home/thomas/Documents/Arduino/hardware/tools",
@@ -22,11 +28,11 @@
                 "limitSymbolsToIncludedHeaders": false
             },
             "defines": [
-                "F_CPU=16000000L",
+                "F_CPU=8000000L",
                 "ARDUINO=10805",
-                "ARDUINO_AVR_UNO",
+                "ARDUINO_AVR_TRINKET3",
                 "ARDUINO_ARCH_AVR"
-            ],
+            ],                        
             "intelliSenseMode": "clang-x64",
             "cStandard": "c11",
             "cppStandard": "c++17"

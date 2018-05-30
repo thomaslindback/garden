@@ -1,5 +1,5 @@
 {
     "sketch": "let_there_be_water.ino",
-    "port": "/dev/ttyACM0",
-    "board": "arduino:avr:uno"
+    "port": "/dev/ttyS0",
+    "board": "adafruit:avr:trinket3"
 }
