@@ -1,0 +1,6 @@
+{
+    "sketch": "sketch_garden_open_sesame_v3.ino",
+    "port": "/dev/ttyACM0",
+    "board": "arduino:avr:uno",
+    "output": "/tmp"
+}

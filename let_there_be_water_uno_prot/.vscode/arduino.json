@@ -1,0 +1,6 @@
+{
+    "sketch": "let_there_be_water_uno_prot.ino",
+    "port": "/dev/ttyS0",
+    "board": "arduino:avr:uno",
+    "output": "../../build"
+}
