@@ -18,7 +18,7 @@ const int DEBOUNCE_INTERVAL_MS = 10;
 #define BTN_OPEN 9
 #define DHTPIN 13     // what pin we're connected to
 
-enum class State { IDLE, TAKE_MEASUREMENT, STOP, CLOSE, OPEN };
+enum class State { IDLE, TAKE_MEASUREMENT, CLOSE, OPEN };
 enum btn_states : bool { open = true, pressed = false };
 
 struct MeasurementVal {
@@ -45,30 +45,16 @@ volatile long unsigned timeSinceLastEvent;
 State state = State::IDLE;
 Stepper stepper(STEPS_PER_REVOLUTION, 3, 4, 5, 6);
 DHT dht(DHTPIN, DHTTYPE); //// Initialize DHT sensor for normal 16mhz Arduino
+
 Bounce btn_stop = Bounce(); 
 Bounce btn_close = Bounce(); 
 Bounce btn_open = Bounce(); 
 
-bool stop_handled = false;
 bool init_sesam = true;
 
 void setup() {
   Serial.begin(9600);
   Serial.println(F("OpenSesame v3"));
-
-  pinMode(BTN_STOP, INPUT_PULLUP);
-  btn_stop.attach(BTN_STOP);
-  btn_stop.interval(DEBOUNCE_INTERVAL_MS); // interval in ms
-  
-  pinMode(BTN_CLOSE, INPUT_PULLUP);
-  btn_close.attach(BTN_CLOSE);
-  btn_close.interval(DEBOUNCE_INTERVAL_MS); // interval in ms
-
-  pinMode(BTN_OPEN, INPUT_PULLUP);
-  btn_open.attach(BTN_OPEN);
-  btn_open.interval(DEBOUNCE_INTERVAL_MS); // interval in ms
-
-  stepper.setSpeed(180);
   cli();
 
   //set timer1 interrupt at 1Hz
@@ -83,8 +69,22 @@ void setup() {
   TCCR1B |= (1 << CS12) | (1 << CS10);  
   // enable timer compare interrupt
   TIMSK1 |= (1 << OCIE1A);
-  
+
   sei();
+
+  pinMode(BTN_STOP, INPUT_PULLUP);
+  btn_stop.attach(BTN_STOP);
+  btn_stop.interval(DEBOUNCE_INTERVAL_MS); // interval in ms
+  
+  pinMode(BTN_CLOSE, INPUT_PULLUP);
+  btn_close.attach(BTN_CLOSE);
+  btn_close.interval(DEBOUNCE_INTERVAL_MS); // interval in ms
+
+  pinMode(BTN_OPEN, INPUT_PULLUP);
+  btn_open.attach(BTN_OPEN);
+  btn_open.interval(DEBOUNCE_INTERVAL_MS); // interval in ms
+
+  stepper.setSpeed(180);
 }
 
 ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
@@ -120,9 +120,6 @@ void serial_state(State state) {
         case State::OPEN:
           Serial.println(F("OPEN"));
           break;
-        case State::STOP:
-          Serial.println(F("STOP"));
-          break;
         case State::TAKE_MEASUREMENT:
           Serial.println(F("TAKE_MEASUREMENT"));
           break;
@@ -145,6 +142,12 @@ void openOneExpansion() {
   }
 }
 
+void resetCounters() {
+  current_expance = 0;
+  current_step = 0;
+  current_total_step = 0;
+}
+
 void loop() {
   btn_stop.update();
   btn_close.update();
@@ -155,16 +158,13 @@ void loop() {
   bool isOpen = btn_open.read();
 
   if(init_sesam) {
-    stepper.step(20);
-    init_sesam = true;
     state = State::CLOSE;
+    init_sesam = false;
   }
   else {
-    if(isStop == pressed && stop_handled == false) {
-      state = State::STOP;
-    } else if(isOpen == false) {
+    if(isOpen == pressed) {
       state = State::OPEN;
-    } else if(isClose == false) {
+    } else if(isClose == pressed) {
       state = State::CLOSE;
     } else if(state != State::TAKE_MEASUREMENT) {
       state = State::IDLE;
@@ -174,7 +174,6 @@ void loop() {
   switch(state)
   {
         case State::IDLE:
-          ; // Chillin out
         break;
         case State::TAKE_MEASUREMENT:
           serial_state(state);
@@ -199,15 +198,12 @@ void loop() {
           } else {
             if(is_between(mval.temp, 20.0, 25.0) && current_expance == 0) {
               openOneExpansion();
-              stop_handled = false;
             }
             else if(is_between(mval.temp, 25.0, 30.0) && current_expance <= 1)  {
               openOneExpansion();
-              stop_handled = false;
             } 
             else if(mval.temp > 30.0 && current_expance <= 2)  {
               openOneExpansion();
-              stop_handled = false;
             }
             state = State::IDLE;
           }
@@ -219,30 +215,23 @@ void loop() {
           Serial.println(current_expance);
           
           break;
-        case State::STOP:
-          current_expance = 0;
-          current_step = 0;
-          stop_handled = true;
-          current_total_step = 0;
-          state = State::IDLE;
-          break;
         case State::CLOSE:
-          serial_state(state);
+          //serial_state(state);
 
-          while(btn_stop.read() != false) {
+          while(btn_stop.read() == open) {
             current_total_step--;
             stepper.step(-1);
             btn_stop.update();
           } 
           state = State::IDLE;
+          resetCounters();
 
-          Serial.print(current_step);
-          Serial.print(F(" "));
-          Serial.print(current_expance);
-          Serial.print(F(" "));
-          Serial.println(current_total_step);
+          //Serial.print(current_step);
+          //Serial.print(F(" "));
+          //Serial.print(current_expance);
+          //Serial.print(F(" "));
+          //Serial.println(current_total_step);
           
-          stop_handled = true;
           break;
         case State::OPEN:
           serial_state(state);
@@ -256,9 +245,8 @@ void loop() {
             current_total_step++;
             stepper.step(1);
             btn_open.update();
-          } while(btn_open.read() == false);
+          } while(btn_open.read() == pressed);
 
-          stop_handled = false;
           state = State::IDLE;
 
           Serial.print(current_step);
