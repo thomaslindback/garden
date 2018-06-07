@@ -17,8 +17,9 @@ const int DEBOUNCE_INTERVAL_MS = 10;
     const int LED = 13;
     const int TRIG_PIN = 9;
     const int ECHO_PIN = 10;
-    const int BTN_PUMP_PIN = 7;
-    const int PUMP_DRIVER_PIN = 8;
+    const int BTN_PUMP_PIN = 12;
+    const int PUMP_DRIVER_PIN = 6;    
+    const int PUMP_SPEED_ANALOG_PIN = A0;
 #endif
 
 volatile int timer_times;
@@ -26,7 +27,7 @@ volatile int timer_times;
 volatile long unsigned eventTime;
 volatile long unsigned previousEventTime;
 volatile long unsigned timeSinceLastEvent;
-
+int pump_speed = 0;
 Bounce btn_pump = Bounce(); 
 
 enum class State
@@ -37,12 +38,14 @@ enum class State
     FILL_UP
 };
 State state = State::IDLE;
+enum btn_states : bool { open = true, pressed = false };
 
 // the setup routine runs once when you press reset:
 void setup()
 {
     pinMode(LED, OUTPUT);
     pinMode(PUMP_DRIVER_PIN, OUTPUT);
+    digitalWrite(PUMP_DRIVER_PIN, LOW);
     pinMode(TRIG_PIN, OUTPUT); // Sets the trigPin as an Output
     pinMode(ECHO_PIN, INPUT); // Sets the echoPin as an Input
 
@@ -51,7 +54,7 @@ void setup()
     btn_pump.interval(DEBOUNCE_INTERVAL_MS); // interval in ms
 
     Serial.begin(9600); // Starts the serial communication
-
+    Serial.println(F("let_there_be_water_uno_prot_v1"));
     cli();
 #ifdef __AVR_ATmega328P__
     TCCR1A = 0;// set entire TCCR1A register to 0
@@ -83,9 +86,8 @@ float measure() {
     long duration = pulseIn(ECHO_PIN, HIGH);
     // Calculating the distance
     float distance = duration*0.034/2;
-    // Prints the distance on the Serial Monitor
-    Serial.print(F("Distance: "));
-    Serial.println(distance);
+
+    return distance;
 }
 
 ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
@@ -99,8 +101,10 @@ ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
 
 // the loop routine runs over and over again forever:
 void loop() {
+    btn_pump.update();
+    
     bool isPump = btn_pump.read();
-    if(isPump == false) {
+    if(isPump == pressed) {
         state = State::PUMP;
     } else if(state == State::MEASURE) {
         state = State::MEASURE;
@@ -116,19 +120,37 @@ void loop() {
             analogWrite(PUMP_DRIVER_PIN, 0);
             break;
         case State::PUMP:
-            analogWrite(PUMP_DRIVER_PIN, 100);
+            pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
+            pump_speed = map(pump_speed, 0, 1023, 0, 255);
+            do {
+              btn_pump.update();
+              analogWrite(PUMP_DRIVER_PIN, pump_speed);
+            } while(btn_pump.read() == pressed);
+
+            analogWrite(PUMP_DRIVER_PIN, 0);
+            state = State::IDLE;
             break;
         case State::MEASURE: 
+            Serial.print(F("measure "));
             water_level = measure();
+            Serial.println(water_level);
             if(water_level > 15.0) {
                 state = State::FILL_UP;
+                Serial.println(F("-> state :: Fillup"));
             } else {
                 state = State::IDLE;
+                Serial.println(F("-> state :: idle"));
             }
             break;
         case State::FILL_UP:
+            pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
+            pump_speed = map(pump_speed, 0, 1023, 0, 255);
+
+            Serial.print(F("Fill_up: "));
+            Serial.println(pump_speed);
+
             while(measure() > 10.0) {
-                analogWrite(PUMP_DRIVER_PIN, 100);
+                analogWrite(PUMP_DRIVER_PIN, pump_speed);
                 delayMicroseconds(50);
             }
             analogWrite(PUMP_DRIVER_PIN, 0);
