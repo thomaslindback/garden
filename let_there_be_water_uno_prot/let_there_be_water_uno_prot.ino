@@ -92,7 +92,7 @@ float measure() {
 
 ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
   timer_times++;
-  if(timer_times >= 5 && state == State::IDLE) {
+  if(timer_times >= 10 && state == State::IDLE) {
     eventTime = millis();
     state = State::MEASURE;
     timer_times = 0;
@@ -120,11 +120,12 @@ void loop() {
             analogWrite(PUMP_DRIVER_PIN, 0);
             break;
         case State::PUMP:
-            pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
-            pump_speed = map(pump_speed, 0, 1023, 0, 255);
             do {
               btn_pump.update();
+              pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
+              pump_speed = map(pump_speed, 0, 1023, 0, 255);
               analogWrite(PUMP_DRIVER_PIN, pump_speed);
+              delayMicroseconds(50);
             } while(btn_pump.read() == pressed);
 
             analogWrite(PUMP_DRIVER_PIN, 0);
@@ -134,7 +135,7 @@ void loop() {
             Serial.print(F("measure "));
             water_level = measure();
             Serial.println(water_level);
-            if(water_level > 15.0) {
+            if(water_level > 20.0) {
                 state = State::FILL_UP;
                 Serial.println(F("-> state :: Fillup"));
             } else {
@@ -143,13 +144,11 @@ void loop() {
             }
             break;
         case State::FILL_UP:
-            pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
-            pump_speed = map(pump_speed, 0, 1023, 0, 255);
-
             Serial.print(F("Fill_up: "));
-            Serial.println(pump_speed);
 
-            while(measure() > 10.0) {
+            while(measure() > 12.0) {
+                pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
+                pump_speed = map(pump_speed, 0, 1023, 0, 255);
                 analogWrite(PUMP_DRIVER_PIN, pump_speed);
                 delayMicroseconds(50);
             }
