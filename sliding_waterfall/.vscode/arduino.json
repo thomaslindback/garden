@@ -1,5 +1,6 @@
 {
-    "sketch": "sketch_garden_open_sesame_2.ino",
+    "sketch": "sliding_waterfall.ino",
     "port": "/dev/ttyACM0",
-    "board": "arduino:avr:uno"
+    "board": "arduino:avr:uno",
+    "output": "/tmp"
 }
