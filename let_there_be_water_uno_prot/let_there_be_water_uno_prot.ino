@@ -75,6 +75,18 @@ void setup()
 }
 
 float measure() {
+    float m1 = measure_one();
+    delayMicroseconds(50);
+    float m2 = measure_one();
+    delayMicroseconds(50);
+    float m3 = measure_one();
+    delayMicroseconds(50);
+    float m4 = measure_one();
+
+    return (m1+m2+m3+m4)/4;
+}
+
+float measure_one() {
     // Clears the trigPin
     digitalWrite(TRIG_PIN, LOW);
     delayMicroseconds(2);
@@ -140,7 +152,7 @@ void loop() {
             Serial.print(F("measure "));
             water_level = measure();
             Serial.println(water_level);
-            if(water_level > 21.0) {
+            if(water_level > 10.0) {
                 state = State::FILL_UP;
                 Serial.println(F("-> state :: Fillup"));
             } else {
@@ -149,13 +161,13 @@ void loop() {
             }
             break;
         case State::FILL_UP:
-            Serial.print(F("Fill_up: "));
+            Serial.print(F("Entering: FILL_UP: "));
 
-            while(measure() > 6.0) {
+            while(measure() > 8.0) {
                 pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
                 pump_speed = map(pump_speed, 0, 1023, 0, 255);
                 analogWrite(PUMP_DRIVER_PIN, pump_speed);
-                delayMicroseconds(50);
+                delayMicroseconds(200);
             }
             analogWrite(PUMP_DRIVER_PIN, 0);
             state = State::IDLE;
