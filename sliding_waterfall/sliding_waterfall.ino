@@ -5,8 +5,10 @@
 #include <Arduino.h>
 #include <Bounce2.h>
 #include <EEPROM.h>
+#include <Stepper.h>
 
 const int DEBOUNCE_INTERVAL_MS = 10;
+const int STEPS_PER_REVOLUTION = 200;
 
 volatile int timer_times;
 
@@ -37,10 +39,11 @@ const int LED_PIN = 13;
 Bounce btn_prog = Bounce();
 Bounce btn_next = Bounce();
 Bounce btn_stop = Bounce();
+Stepper stepper(STEPS_PER_REVOLUTION, 3, 4, 5, 6);
 
 long start_time;
 
-void EEPROMWriteInt(int address, int value)
+void EEPROMWriteInt(int address, uint16_t value)
 {
     byte two = (value & 0xFF);
     byte one = ((value >> 8) & 0xFF);
@@ -48,13 +51,13 @@ void EEPROMWriteInt(int address, int value)
     EEPROM.write(address + 1, one);
 }
 
-int EEPROMReadInt(int address)
+uint16_t EEPROMReadInt(int address)
 {
     //Read the 4 bytes from the eeprom memory.
     int two = EEPROM.read(address);
     int one = EEPROM.read(address + 1);
 
-    //Return the recomposed long by using bitshift.
+    //Return the recomposed int by using bitshift.
     return ((two << 0) & 0xFF) + ((one << 8) & 0xFF);
 }
 
@@ -83,7 +86,8 @@ void setup()
     Serial.begin(9600); // Starts the serial communication
     Serial.println(F("sliding_waterfall_v1"));
 
-    // put your setup code here, to run once:
+    stepper.setSpeed(180);
+
     cli();
 
     TCCR2A = 0; // set entire TCCR2A register to 0
@@ -155,6 +159,7 @@ void loop()
     case State::PROG:
         // write to EEPROM
         // format 90,79,203,len,no steps,time to pump,no steps,time to pump.....
+        
         bool led_state = false;
         for(int i = 0; i < 10; i++) {
             digitalWrite(RED_PIN, led_state);
@@ -164,16 +169,74 @@ void loop()
         }
         digitalWrite(RED_PIN, LOW);
         digitalWrite(GREEN_PIN, LOW);
-        
-        byte no_steps = 0;
-        // count no steps
-        do {
-            btn_next.update();
-        } while(btn_next.read() == open);
 
-        // measure running time of pump
-        long start = millis();
-        
+        if(EEPROM.read(0) != 90) {
+            EEPROM.write(0, 90);
+            EEPROM.write(1, 79);
+            EEPROM.write(2, 203);
+        }
+
+        byte no_moves = 0;
+        bool pump = false;
+        bool cont = true;
+        int current_adress = 4;
+
+        while(cont) {
+            if(pump == false) {
+                digitalWrite(GREEN_PIN, HIGH);
+
+                // count no steps
+                uint16_t no_steps = 0;
+                do {
+                    stepper.step(1);
+                    no_steps++;
+
+                    btn_stop.update();
+                    if(btn_stop.read() == pressed) {
+                        cont = false;
+                    }
+
+                    btn_next.update();
+                } while(btn_next.read() == open && cont == true);
+
+                EEPROMWriteInt(current_adress, no_steps);
+                current_adress += 2;
+                no_moves++;
+                digitalWrite(GREEN_PIN, LOW);
+            } else {
+                digitalWrite(GREEN_PIN, HIGH);
+
+                // measure running time of pump
+                long start = millis();
+                do {
+                    btn_next.update();
+
+                    btn_stop.update();
+                    if(btn_stop.read() == pressed) {
+                        cont = false;
+                    }
+
+                } while(btn_next.read() == open && cont == true);
+
+                EEPROMWriteInt(current_adress, millis() - start);
+                current_adress += 2;
+                no_moves++;
+                digitalWrite(GREEN_PIN, LOW);
+            }
+            
+            pump = !pump;
+
+            digitalWrite(RED_PIN, HIGH);
+            delay(2000);
+            digitalWrite(RED_PIN, LOW);
+
+            btn_stop.update();
+            if(btn_stop.read() == pressed) {
+                cont = false;
+            }
+        }
+
+        EEPROM.write(3, no_moves);
         state = State::IDLE;
         break;
     }
