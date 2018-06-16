@@ -16,7 +16,7 @@ const int DEBOUNCE_INTERVAL_MS = 10;
 #else
     const int LED = 13;
     const int TRIG_PIN = 9;
-    const int ECHO_PIN = 10;
+    const int ECHO_PIN = 8;
     const int BTN_PUMP_PIN = 12;
     const int PUMP_DRIVER_PIN = 6;    
     const int PUMP_SPEED_ANALOG_PIN = A0;
@@ -135,7 +135,7 @@ void loop() {
             Serial.print(F("measure "));
             water_level = measure();
             Serial.println(water_level);
-            if(water_level > 20.0) {
+            if(water_level > 21.0) {
                 state = State::FILL_UP;
                 Serial.println(F("-> state :: Fillup"));
             } else {
@@ -146,7 +146,7 @@ void loop() {
         case State::FILL_UP:
             Serial.print(F("Fill_up: "));
 
-            while(measure() > 12.0) {
+            while(measure() > 6.0) {
                 pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
                 pump_speed = map(pump_speed, 0, 1023, 0, 255);
                 analogWrite(PUMP_DRIVER_PIN, pump_speed);
