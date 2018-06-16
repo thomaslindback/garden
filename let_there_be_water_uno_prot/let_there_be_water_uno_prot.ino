@@ -80,12 +80,14 @@ float measure() {
     float m2 = measure_one();
     delayMicroseconds(200);
     float m3 = measure_one();
+    delayMicroseconds(200);
+    float m4 = measure_one();
 
-    Serial.println(m1);
-    Serial.println(m2);
-    Serial.println(m3);
+//    Serial.println(m1);
+//    Serial.println(m2);
+//    Serial.println(m3);
 
-    return (m1+m2+m3)/4;
+    return (m1 + m2 + m3 + m4)/4.0;
 }
 
 float measure_one() {
@@ -154,7 +156,7 @@ void loop() {
             Serial.print(F("measure "));
             water_level = measure();
             Serial.println(water_level);
-            if(water_level > 10.0) {
+            if(water_level > 13.0) {
                 state = State::FILL_UP;
                 Serial.println(F("-> state :: Fillup"));
             } else {
@@ -168,7 +170,7 @@ void loop() {
             float level = measure();
             Serial.println(level);
 
-            while(level > 8.0) {
+            while(level > 5.0) {
                 pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
                 pump_speed = map(pump_speed, 0, 1023, 0, 255);
                 analogWrite(PUMP_DRIVER_PIN, pump_speed);
