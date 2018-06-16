@@ -76,14 +76,16 @@ void setup()
 
 float measure() {
     float m1 = measure_one();
-    delayMicroseconds(50);
+    delayMicroseconds(200);
     float m2 = measure_one();
-    delayMicroseconds(50);
+    delayMicroseconds(200);
     float m3 = measure_one();
-    delayMicroseconds(50);
-    float m4 = measure_one();
 
-    return (m1+m2+m3+m4)/4;
+    Serial.println(m1);
+    Serial.println(m2);
+    Serial.println(m3);
+
+    return (m1+m2+m3)/4;
 }
 
 float measure_one() {
@@ -161,13 +163,18 @@ void loop() {
             }
             break;
         case State::FILL_UP:
-            Serial.print(F("Entering: FILL_UP: "));
+            Serial.println(F("Entering: FILL_UP: "));
 
-            while(measure() > 8.0) {
+            float level = measure();
+            Serial.println(level);
+
+            while(level > 8.0) {
                 pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
                 pump_speed = map(pump_speed, 0, 1023, 0, 255);
                 analogWrite(PUMP_DRIVER_PIN, pump_speed);
                 delayMicroseconds(200);
+                level = measure();
+                Serial.println(level);
             }
             analogWrite(PUMP_DRIVER_PIN, 0);
             state = State::IDLE;
