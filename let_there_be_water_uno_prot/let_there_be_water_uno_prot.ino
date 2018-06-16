@@ -90,8 +90,13 @@ float measure() {
     return distance;
 }
 
+volatile bool led_toggle = false;
+
 ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
   timer_times++;
+  digitalWrite(LED, led_toggle);
+  led_toggle = !led_toggle;
+  
   if(timer_times >= 10 && state == State::IDLE) {
     eventTime = millis();
     state = State::MEASURE;
