@@ -17,6 +17,7 @@ const int DEBOUNCE_INTERVAL_MS = 10;
     const int LED = 13;
     const int TRIG_PIN = 9;
     const int ECHO_PIN = 8;
+    const int PUMP_RUNNING_LED_PIN = 11;    
     const int BTN_PUMP_PIN = 12;
     const int PUMP_DRIVER_PIN = 6;    
     const int PUMP_SPEED_ANALOG_PIN = A0;
@@ -48,6 +49,9 @@ void setup()
     digitalWrite(PUMP_DRIVER_PIN, LOW);
     pinMode(TRIG_PIN, OUTPUT); // Sets the trigPin as an Output
     pinMode(ECHO_PIN, INPUT); // Sets the echoPin as an Input
+
+    pinMode(PUMP_RUNNING_LED_PIN, OUTPUT);
+    digitalWrite(PUMP_RUNNING_LED_PIN, LOW);
 
     pinMode(BTN_PUMP_PIN, INPUT_PULLUP);
     btn_pump.attach(BTN_PUMP_PIN);
@@ -141,6 +145,7 @@ void loop() {
             analogWrite(PUMP_DRIVER_PIN, 0);
             break;
         case State::PUMP:
+            digitalWrite(PUMP_RUNNING_LED_PIN, HIGH);
             do {
               btn_pump.update();
               pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
@@ -150,6 +155,7 @@ void loop() {
             } while(btn_pump.read() == pressed);
 
             analogWrite(PUMP_DRIVER_PIN, 0);
+            digitalWrite(PUMP_RUNNING_LED_PIN, LOW);
             state = State::IDLE;
             break;
         case State::MEASURE: 
@@ -166,6 +172,7 @@ void loop() {
             break;
         case State::FILL_UP:
             Serial.println(F("Entering: FILL_UP: "));
+            digitalWrite(PUMP_RUNNING_LED_PIN, HIGH);
 
             float level = measure();
             Serial.println(level);
@@ -179,6 +186,8 @@ void loop() {
                 Serial.println(level);
             }
             analogWrite(PUMP_DRIVER_PIN, 0);
+            digitalWrite(PUMP_RUNNING_LED_PIN, LOW);
+
             state = State::IDLE;
             break;
     }
