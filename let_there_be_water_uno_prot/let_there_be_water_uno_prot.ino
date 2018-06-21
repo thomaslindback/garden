@@ -162,7 +162,7 @@ void loop() {
             Serial.print(F("measure "));
             water_level = measure();
             Serial.println(water_level);
-            if(water_level > 13.0) {
+            if(water_level > 15.0) {
                 state = State::FILL_UP;
                 Serial.println(F("-> state :: Fillup"));
             } else {
@@ -177,7 +177,7 @@ void loop() {
             float level = measure();
             Serial.println(level);
 
-            while(level > 5.0) {
+            while(level > 8.0) {
                 pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
                 pump_speed = map(pump_speed, 0, 1023, 0, 255);
                 analogWrite(PUMP_DRIVER_PIN, pump_speed);
