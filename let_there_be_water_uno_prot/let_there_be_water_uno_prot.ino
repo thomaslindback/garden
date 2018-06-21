@@ -117,7 +117,7 @@ ISR(TIMER1_COMPA_vect){//timer1 interrupt 0.5Hz
   digitalWrite(LED, led_toggle);
   led_toggle = !led_toggle;
   
-  if(timer_times >= 10 && state == State::IDLE) {
+  if(timer_times >= 15 && state == State::IDLE) {
     eventTime = millis();
     state = State::MEASURE;
     timer_times = 0;
