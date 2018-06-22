@@ -13,7 +13,10 @@
                 "/media/home/thomas/Arduino/libraries",
                 "/media/home/thomas/Arduino/libraries/Bounce2/src",
                 "/media/home/thomas/Arduino/libraries/DHT-sensor",
-                "/media/home/thomas/dev/embed/arduino-1.8.5/libraries/Stepper/src"
+                "/media/home/thomas/dev/embed/arduino-1.8.5/libraries/Stepper/src",
+                "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/arduino/avr/libraries/Wire/src",
+                "/media/home/thomas/dev/embed/arduino-1.8.5/libraries/Robot_Control/src/utility",
+                "/media/home/thomas/Arduino/libraries/Adafruit_LED_Backpack_Library"
             ],
             "browse": {
                 "path": [
@@ -27,7 +30,10 @@
                     "/media/home/thomas/Arduino/libraries",
                     "/media/home/thomas/Arduino/libraries/Bounce2/src",
                     "/media/home/thomas/Arduino/libraries/DHT-sensor",
-                    "/media/home/thomas/dev/embed/arduino-1.8.5/libraries/Stepper/src"
+                    "/media/home/thomas/dev/embed/arduino-1.8.5/libraries/Stepper/src",
+                    "/media/home/thomas/dev/embed/arduino-1.8.5/hardware/arduino/avr/libraries/Wire/src",
+                    "/media/home/thomas/dev/embed/arduino-1.8.5/libraries/Robot_Control/src/utility",
+                    "/media/home/thomas/Arduino/libraries/Adafruit_LED_Backpack_Library"
                 ],
                 "limitSymbolsToIncludedHeaders": false
             },
