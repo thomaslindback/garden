@@ -31,6 +31,7 @@ const int PROG_BTN_NEXT_PIN = 11;
 const int PROG_BTN_STOP_PIN = 10;
 const int RUN_ONCE_BTN_PIN = 8;
 
+const int STEPPER_SLEEP_PIN = 4;
 const int STOP_SWITCH_PIN = A1;
 const int MOISTURE_SENSOR_PIN = A3;
 const int PUMP_SPEED_ANALOG_PIN = A0;
@@ -74,6 +75,9 @@ void setup() {
 
   pinMode(PUMP_DRIVER_PIN, OUTPUT);
   digitalWrite(PUMP_DRIVER_PIN, LOW);
+
+  pinMode(STEPPER_SLEEP_PIN, OUTPUT);
+  digitalWrite(STEPPER_SLEEP_PIN, HIGH);
 
   pinMode(PROG_BTN_START_PIN, INPUT_PULLUP);
   btn_prog_start.attach(PROG_BTN_START_PIN);
@@ -119,7 +123,8 @@ void setup() {
   sei();
 
   ledMatrix.draw_heads_up_seq(1000);
-  return_home();
+  //return_home();
+  stepper.step(20);
 }
 
 ISR(TIMER2_COMPA_vect) { // timer0 interrupt 500Hz

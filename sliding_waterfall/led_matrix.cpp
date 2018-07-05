@@ -27,6 +27,8 @@ void LedMatrix::draw_heads_up_seq(uint16_t delay) {
     matrix->writeDisplay();
     ::delay(delay);
   }
+  matrix->clear();
+  matrix->writeDisplay();
 }
 
 void LedMatrix::clear() { matrix->clear(); }
