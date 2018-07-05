@@ -17,26 +17,33 @@ volatile long unsigned eventTime;
 volatile long unsigned previousEventTime;
 volatile long unsigned timeSinceLastEvent;
 
-enum class State { IDLE, START_PROG, PROG, RUN_ONCE };
+enum class State { IDLE, START_PROG, PROG, RUN_ONCE, MEASURE_MOIST };
 State state = State::IDLE;
 enum btn_states : bool { open = true, pressed = false };
 
-const int PUMP_SPEED_ANALOG_PIN = A0;
 const int MATRIX_DATA_PIN = A4;
 const int MATRIX_CLC_PIN = A5;
 
 const int PUMP_DRIVER_PIN = 6;
-const int START_PROG_PIN = 7;
-const int PROG_NEXT_PIN = 8;
-const int PROG_STOP_PIN = 9;
-const int RUN_ONCE_PIN = 12;
+
+const int PROG_BTN_START_PIN = 12;
+const int PROG_BTN_NEXT_PIN = 11;
+const int PROG_BTN_STOP_PIN = 10;
+const int RUN_ONCE_BTN_PIN = 8;
+
+const int STOP_SWITCH_PIN = A1;
+const int MOISTURE_SENSOR_PIN = A3;
+const int PUMP_SPEED_ANALOG_PIN = A0;
+
 const int LED_PIN = 13;
 
-Bounce btn_start_prog = Bounce();
-Bounce btn_next = Bounce();
-Bounce btn_stop = Bounce();
+Bounce btn_prog_start = Bounce();
+Bounce btn_prog_next = Bounce();
+Bounce btn_prog_stop = Bounce();
 Bounce btn_run_once = Bounce();
-Stepper stepper(STEPS_PER_REVOLUTION, 3, 4, 5, 6);
+Bounce btn_stop_switch = Bounce();
+
+Stepper stepper(STEPS_PER_REVOLUTION, 2, 3, 5, 7);
 LedMatrix ledMatrix = LedMatrix();
 
 long start_time;
@@ -52,33 +59,46 @@ uint16_t EEPROMReadInt(int address) {
   return word(high, low);
 }
 
-void setup() {
+void return_home() {
+  stepper.setSpeed(30);
+  btn_stop_switch.update();
+  while(btn_stop_switch.read() == open) {
+    stepper.step(-1);
+    btn_stop_switch.update();
+  } 
+}
+
+void setup() {  
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
   pinMode(PUMP_DRIVER_PIN, OUTPUT);
   digitalWrite(PUMP_DRIVER_PIN, LOW);
 
-  pinMode(START_PROG_PIN, INPUT_PULLUP);
-  btn_start_prog.attach(START_PROG_PIN);
-  btn_start_prog.interval(DEBOUNCE_INTERVAL_MS); // interval in ms
+  pinMode(PROG_BTN_START_PIN, INPUT_PULLUP);
+  btn_prog_start.attach(PROG_BTN_START_PIN);
+  btn_prog_start.interval(DEBOUNCE_INTERVAL_MS); // interval in ms
 
-  pinMode(PROG_NEXT_PIN, INPUT_PULLUP);
-  btn_next.attach(PROG_NEXT_PIN);
-  btn_next.interval(DEBOUNCE_INTERVAL_MS);
+  pinMode(PROG_BTN_NEXT_PIN, INPUT_PULLUP);
+  btn_prog_next.attach(PROG_BTN_NEXT_PIN);
+  btn_prog_next.interval(DEBOUNCE_INTERVAL_MS);
 
-  pinMode(PROG_STOP_PIN, INPUT_PULLUP);
-  btn_stop.attach(PROG_STOP_PIN);
-  btn_stop.interval(DEBOUNCE_INTERVAL_MS);
+  pinMode(PROG_BTN_STOP_PIN, INPUT_PULLUP);
+  btn_prog_stop.attach(PROG_BTN_STOP_PIN);
+  btn_prog_stop.interval(DEBOUNCE_INTERVAL_MS);
 
-  pinMode(RUN_ONCE_PIN, INPUT_PULLUP);
-  btn_run_once.attach(RUN_ONCE_PIN);
+  pinMode(RUN_ONCE_BTN_PIN, INPUT_PULLUP);
+  btn_run_once.attach(RUN_ONCE_BTN_PIN);
   btn_run_once.interval(DEBOUNCE_INTERVAL_MS);
+
+  pinMode(STOP_SWITCH_PIN, INPUT_PULLUP);
+  btn_stop_switch.attach(STOP_SWITCH_PIN);
+  btn_stop_switch.interval(DEBOUNCE_INTERVAL_MS);
 
   Serial.begin(9600); // Starts the serial communication
   Serial.println(F("sliding_waterfall_v1"));
 
-  stepper.setSpeed(180);
+  stepper.setSpeed(30);
 
   ledMatrix.connect(0x70); // pass in the address
 
@@ -97,6 +117,9 @@ void setup() {
   TIMSK2 |= (1 << OCIE2A);
 
   sei();
+
+  ledMatrix.draw_heads_up_seq(1000);
+  return_home();
 }
 
 ISR(TIMER2_COMPA_vect) { // timer0 interrupt 500Hz
@@ -126,17 +149,23 @@ void loop() {
   ledMatrix.draw_one_char_to_disp("Q");
   delay(500);
 
-  ledMatrix.draw_heads_up_seq(500);
+  
   return;
 
-  btn_start_prog.update();
+  btn_prog_start.update();
+  btn_prog_next.update();
+  btn_prog_stop.update();
   btn_run_once.update();
+  btn_stop_switch.update();
 
-  bool isStartProg = btn_start_prog.read();
+  bool isProgStart = btn_prog_start.read();
+  bool isProgNext = btn_prog_next.read();
+  bool isProgStop = btn_prog_stop.read();
   bool isRunOnce = btn_run_once.read();
+  bool isStopSwitch = btn_stop_switch.read();
 
   if (state != State::PROG) {
-    if (isStartProg == pressed) {
+    if (isProgStart == pressed) {
       Serial.println(F("start prog is pressed"));
       state = State::START_PROG;
     } else if (isRunOnce == pressed) {
@@ -148,6 +177,8 @@ void loop() {
 
   switch (state) {
   case State::IDLE:
+    break;
+  case State::MEASURE_MOIST:
     break;
   case State::RUN_ONCE:
     Serial.println(F("State::RUN_ONCE"));
@@ -165,8 +196,10 @@ void loop() {
       Serial.print(F(" at "));
       Serial.println(mp);
       if (doStepper) {
+        ledMatrix.draw_circle();
         stepper.step(mem);
       } else {
+        ledMatrix.draw_shower();
         pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
         pump_speed = map(pump_speed, 0, 1023, 0, 255);
         analogWrite(PUMP_DRIVER_PIN, pump_speed);
@@ -179,21 +212,23 @@ void loop() {
       doStepper = !doStepper;
       delay(4000);
     }
+    ledMatrix.clear();
+    // GO home
     state = State::IDLE;
     break;
   case State::START_PROG:
     Serial.println(F("State::START_PROG"));
     start_time = millis();
-    while (millis() - start_time < 5000 && btn_start_prog.read() == pressed) {
+    while (millis() - start_time < 5000 && btn_prog_start.read() == pressed) {
       delayMicroseconds(10);
-      btn_start_prog.update();
+      btn_prog_start.update();
     }
     if (millis() - start_time >= 5000) {
-      // TODO: Show wait
+      ledMatrix.draw_heads_up_seq(1000);
       do {
-        btn_start_prog.update();
+        btn_prog_start.update();
         delay(40);
-      } while (btn_start_prog.read() == pressed);
+      } while (btn_prog_start.read() == pressed);
 
       state = State::PROG;
     } else {
@@ -221,19 +256,20 @@ void loop() {
     // cont = false;
     while (cont) {
       if (pump == false) {
+        ledMatrix.draw_circle();
         // count no steps
         uint16_t no_steps = 0;
         do {
           stepper.step(1);
           no_steps++;
 
-          btn_stop.update();
-          if (btn_stop.read() == pressed) {
+          btn_prog_stop.update();
+          if (btn_prog_stop.read() == pressed) {
             cont = false;
           }
 
-          btn_next.update();
-        } while (btn_next.read() == open && cont == true);
+          btn_prog_next.update();
+        } while (btn_prog_next.read() == open && cont == true);
 
         if (cont == false) {
           continue;
@@ -247,6 +283,8 @@ void loop() {
         current_adress += 2;
         no_moves++;
       } else {
+        ledMatrix.draw_shower();
+
         // measure running time of pump
         unsigned long start = millis();
 
@@ -255,13 +293,13 @@ void loop() {
         analogWrite(PUMP_DRIVER_PIN, pump_speed);
 
         do {
-          btn_next.update();
-          btn_stop.update();
-          if (btn_stop.read() == pressed) {
+          btn_prog_next.update();
+          btn_prog_stop.update();
+          if (btn_prog_stop.read() == pressed) {
             cont = false;
           }
           delayMicroseconds(50);
-        } while (btn_next.read() == open && cont == true);
+        } while (btn_prog_next.read() == open && cont == true);
 
         analogWrite(PUMP_DRIVER_PIN, 0);
 
@@ -283,16 +321,17 @@ void loop() {
       pump = !pump;
 
       do {
-        btn_next.update();
-      } while (btn_next.read() == pressed);
+        btn_prog_next.update();
+      } while (btn_prog_next.read() == pressed);
 
-      btn_stop.update();
-      if (btn_stop.read() == pressed) {
+      btn_prog_stop.update();
+      if (btn_prog_stop.read() == pressed) {
         cont = false;
       }
     }
     EEPROM.write(3, no_moves);
     Serial.println(F("Done PROG"));
+    ledMatrix.clear();
     state = State::IDLE;
     break;
   }
