@@ -15,6 +15,12 @@ void LedMatrix::draw_circle() {
   matrix->drawBitmap(0, 0, circle_2, 8, 8, LED_ON);
   matrix->writeDisplay();
 }
+
+void LedMatrix::draw_wait() {
+  matrix->drawBitmap(0, 0, wait, 8, 8, LED_ON);
+  matrix->writeDisplay();
+}
+
 void LedMatrix::draw_shower() {
   matrix->drawBitmap(0, 0, shower_head, 8, 8, LED_ON);
   matrix->writeDisplay();
@@ -31,4 +37,7 @@ void LedMatrix::draw_heads_up_seq(uint16_t delay) {
   matrix->writeDisplay();
 }
 
-void LedMatrix::clear() { matrix->clear(); }
+void LedMatrix::clear() { 
+  matrix->clear(); 
+  matrix->writeDisplay();
+}

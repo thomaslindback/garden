@@ -14,7 +14,15 @@ static const uint8_t PROGMEM
     circle_2[] = {B00111100, B01111110, B11100111, B11000011,
                   B11000011, B11100111, B01111110, B00111100},
     shower_head[] = {B00011000, B00011000, B00011000, B00000000,
-                     B00101000, B01010100, B10101010, B01010101};
+                     B00101000, B01010100, B10101010, B01010101},
+    wait[] = {B11111111,
+              B01111110,
+              B00111100,
+              B00011000,
+              B00011000,
+              B00111100,
+              B01111110,
+              B11111111};
 
 class LedMatrix {
 public:
@@ -24,6 +32,7 @@ public:
   void draw_one_char_to_disp(char *txt);
   void draw_circle();
   void draw_shower();
+  void draw_wait();
   void draw_heads_up_seq(uint16_t delay);
   void clear();
 

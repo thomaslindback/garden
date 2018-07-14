@@ -6,12 +6,11 @@
 #include <Arduino.h>
 #include <Bounce2.h>
 #include <EEPROM.h>
-#include <Stepper.h>
 
 const int DEBOUNCE_INTERVAL_MS = 10;
 const int STEPS_PER_REVOLUTION = 200;
-const int STEPPER_DELAY = 3000;
-const int DELAY_BETWEEN_STEP_AND_PUMP = 5000;
+const int STEPPER_DELAY = 6000;
+const int DELAY_BETWEEN_STEP_AND_PUMP = 4000;
 
 volatile int timer_times;
 
@@ -22,7 +21,7 @@ volatile long unsigned timeSinceLastEvent;
 enum class State { IDLE, START_PROG, PROG, RUN_ONCE, MEASURE_MOIST };
 State state = State::IDLE;
 enum btn_states : bool { open = true, pressed = false };
-enum stepper_dir : byte { left = 0x1, right = 0x0 };
+enum stepper_dir : byte { left = 0x0, right = 0x1 };
 
 const int PUMP_SPEED_ANALOG_PIN = A0;
 const int STOP_SWITCH_PIN = A1;
@@ -31,7 +30,7 @@ const int MATRIX_DATA_PIN = A4;
 const int MATRIX_CLC_PIN = A5;
 
 const int STEPPER_DIR_PIN = 3;
-const int STEPPER_SLEEP_PIN = 4;
+const int STEPPER_ENABLE_PIN = 4;
 const int STEPPER_STEP_PIN =  5;
 const int PUMP_DRIVER_PIN = 6;
 const int RUN_ONCE_BTN_PIN = 8;
@@ -69,12 +68,19 @@ void take_one_stepper_step(stepper_dir dir) {
     digitalWrite(STEPPER_STEP_PIN, LOW);
     delayMicroseconds(STEPPER_DELAY);
 }
+void update_buttons() {
+  btn_prog_start.update();
+  btn_prog_next.update();
+  btn_prog_stop.update();
+  btn_run_once.update();
+  btn_stop_switch.update();
+}
 
 void return_home() {
-  btn_stop_switch.update();
+  update_buttons();
   while(btn_stop_switch.read() == open) {
     take_one_stepper_step(right);
-    btn_stop_switch.update();
+    update_buttons();
   } 
 }
 
@@ -85,8 +91,8 @@ void setup() {
   pinMode(PUMP_DRIVER_PIN, OUTPUT);
   digitalWrite(PUMP_DRIVER_PIN, LOW);
 
-  pinMode(STEPPER_SLEEP_PIN, OUTPUT);
-  digitalWrite(STEPPER_SLEEP_PIN, HIGH);
+  pinMode(STEPPER_ENABLE_PIN, OUTPUT);
+  digitalWrite(STEPPER_ENABLE_PIN, LOW);
 
   pinMode(PROG_BTN_START_PIN, INPUT_PULLUP);
   btn_prog_start.attach(PROG_BTN_START_PIN);
@@ -150,7 +156,8 @@ int pump_speed;
 bool doStepper;
 
 void loop() {
-  ledMatrix.clear();
+
+/*  ledMatrix.clear();
   ledMatrix.draw_shower();
   delay(500);
   ledMatrix.clear();
@@ -162,12 +169,16 @@ void loop() {
 
   
   return;
+*/
 
-  btn_prog_start.update();
-  btn_prog_next.update();
-  btn_prog_stop.update();
-  btn_run_once.update();
-  btn_stop_switch.update();
+/*        pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
+        pump_speed = map(pump_speed, 0, 1023, 0, 255);
+        analogWrite(PUMP_DRIVER_PIN, pump_speed);
+
+  return;
+  */
+
+  update_buttons();
 
   bool isProgStart = btn_prog_start.read();
   bool isProgNext = btn_prog_next.read();
@@ -197,6 +208,9 @@ void loop() {
       state = State::IDLE;
       break;
     }
+    
+    digitalWrite(STEPPER_ENABLE_PIN, HIGH);
+
     doStepper = true;
     Serial.println(F("memory"));
     prog_len = EEPROM.read(3);
@@ -207,11 +221,13 @@ void loop() {
       Serial.print(F(" at "));
       Serial.println(mp);
       if (doStepper) {
+        ledMatrix.clear();
         ledMatrix.draw_circle();
         for(int i = 0; i < mem; i++) {
-          take_one_stepper_step(right);
+          take_one_stepper_step(left);
         }
       } else {
+        ledMatrix.clear();
         ledMatrix.draw_shower();
         pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
         pump_speed = map(pump_speed, 0, 1023, 0, 255);
@@ -222,9 +238,13 @@ void loop() {
         } while (millis() - start_time < mem);
         analogWrite(PUMP_DRIVER_PIN, 0);
       }
+      ledMatrix.clear();
+      ledMatrix.draw_wait();
       doStepper = !doStepper;
       delay(DELAY_BETWEEN_STEP_AND_PUMP);
     }
+    digitalWrite(STEPPER_ENABLE_PIN, LOW);
+
     ledMatrix.clear();
     //
     return_home();
@@ -235,12 +255,12 @@ void loop() {
     start_time = millis();
     while (millis() - start_time < 5000 && btn_prog_start.read() == pressed) {
       delayMicroseconds(10);
-      btn_prog_start.update();
+      update_buttons();
     }
     if (millis() - start_time >= 5000) {
       ledMatrix.draw_heads_up_seq(1000);
       do {
-        btn_prog_start.update();
+        update_buttons();
         delay(40);
       } while (btn_prog_start.read() == pressed);
 
@@ -267,22 +287,24 @@ void loop() {
     bool cont = true;
     int current_adress = 4;
 
-    // cont = false;
+    digitalWrite(STEPPER_ENABLE_PIN, HIGH);
+
     while (cont) {
       if (pump == false) {
+        ledMatrix.clear();
         ledMatrix.draw_circle();
         // count no steps
         uint16_t no_steps = 0;
         do {
-          take_one_stepper_step(right);
+          take_one_stepper_step(left);
           no_steps++;
 
-          btn_prog_stop.update();
+          update_buttons();
           if (btn_prog_stop.read() == pressed) {
             cont = false;
           }
 
-          btn_prog_next.update();
+          update_buttons();
         } while (btn_prog_next.read() == open && cont == true);
 
         if (cont == false) {
@@ -297,6 +319,7 @@ void loop() {
         current_adress += 2;
         no_moves++;
       } else {
+        ledMatrix.clear();
         ledMatrix.draw_shower();
 
         // measure running time of pump
@@ -307,8 +330,7 @@ void loop() {
         analogWrite(PUMP_DRIVER_PIN, pump_speed);
 
         do {
-          btn_prog_next.update();
-          btn_prog_stop.update();
+          update_buttons();
           if (btn_prog_stop.read() == pressed) {
             cont = false;
           }
@@ -335,19 +357,23 @@ void loop() {
       pump = !pump;
 
       do {
-        btn_prog_next.update();
+        update_buttons();
       } while (btn_prog_next.read() == pressed);
 
-      btn_prog_stop.update();
+      update_buttons();
       if (btn_prog_stop.read() == pressed) {
         cont = false;
       }
-
+      ledMatrix.clear();
+      ledMatrix.draw_wait();
       delay(DELAY_BETWEEN_STEP_AND_PUMP);
     }
     EEPROM.write(3, no_moves);
     Serial.println(F("Done PROG"));
     ledMatrix.clear();
+
+    digitalWrite(STEPPER_ENABLE_PIN, LOW);
+
     state = State::IDLE;
     break;
   }
