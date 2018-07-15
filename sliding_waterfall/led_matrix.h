@@ -29,7 +29,7 @@ public:
   LedMatrix() { matrix = new Adafruit_8x8matrix(); }
   ~LedMatrix() { delete matrix; }
   void connect(int addr) { matrix->begin(addr); }
-  void draw_one_char_to_disp(char *txt);
+  void draw_one_char_to_disp(const char *txt);
   void draw_circle();
   void draw_shower();
   void draw_wait();

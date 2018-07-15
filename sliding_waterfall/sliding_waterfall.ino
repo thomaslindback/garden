@@ -92,7 +92,7 @@ void setup() {
   digitalWrite(PUMP_DRIVER_PIN, LOW);
 
   pinMode(STEPPER_ENABLE_PIN, OUTPUT);
-  digitalWrite(STEPPER_ENABLE_PIN, LOW);
+  digitalWrite(STEPPER_ENABLE_PIN, HIGH);
 
   pinMode(PROG_BTN_START_PIN, INPUT_PULLUP);
   btn_prog_start.attach(PROG_BTN_START_PIN);
@@ -136,7 +136,11 @@ void setup() {
   sei();
 
   ledMatrix.draw_heads_up_seq(1000);
+
+  digitalWrite(STEPPER_ENABLE_PIN, LOW);
   return_home();
+  digitalWrite(STEPPER_ENABLE_PIN, HIGH);
+
 }
 
 ISR(TIMER2_COMPA_vect) { // timer0 interrupt 500Hz
@@ -209,7 +213,7 @@ void loop() {
       break;
     }
     
-    digitalWrite(STEPPER_ENABLE_PIN, HIGH);
+    digitalWrite(STEPPER_ENABLE_PIN, LOW);
 
     doStepper = true;
     Serial.println(F("memory"));
@@ -243,7 +247,7 @@ void loop() {
       doStepper = !doStepper;
       delay(DELAY_BETWEEN_STEP_AND_PUMP);
     }
-    digitalWrite(STEPPER_ENABLE_PIN, LOW);
+    digitalWrite(STEPPER_ENABLE_PIN, HIGH);
 
     ledMatrix.clear();
     //
@@ -287,7 +291,7 @@ void loop() {
     bool cont = true;
     int current_adress = 4;
 
-    digitalWrite(STEPPER_ENABLE_PIN, HIGH);
+    digitalWrite(STEPPER_ENABLE_PIN, LOW);
 
     while (cont) {
       if (pump == false) {
@@ -371,8 +375,9 @@ void loop() {
     EEPROM.write(3, no_moves);
     Serial.println(F("Done PROG"));
     ledMatrix.clear();
+    return_home();
 
-    digitalWrite(STEPPER_ENABLE_PIN, LOW);
+    digitalWrite(STEPPER_ENABLE_PIN, HIGH);
 
     state = State::IDLE;
     break;

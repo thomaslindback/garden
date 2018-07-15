@@ -1,7 +1,7 @@
 
 #include "led_matrix.h"
 
-void LedMatrix::draw_one_char_to_disp(char *txt) {
+void LedMatrix::draw_one_char_to_disp(const char *txt) {
   matrix->setTextSize(1);
   matrix->setTextWrap(false); // we dont want text to wrap so it scrolls nicely
   matrix->setTextColor(LED_ON);
