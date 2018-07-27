@@ -86,11 +86,6 @@ float measure() {
     float m3 = measure_one();
     delayMicroseconds(200);
     float m4 = measure_one();
-
-//    Serial.println(m1);
-//    Serial.println(m2);
-//    Serial.println(m3);
-
     return (m1 + m2 + m3 + m4)/4.0;
 }
 
@@ -140,6 +135,8 @@ void loop() {
     }
 
     float water_level = 0.0;
+    unsigned long startTime = 0;
+
     switch (state) {
         case State::IDLE:
             analogWrite(PUMP_DRIVER_PIN, 0);
@@ -173,18 +170,17 @@ void loop() {
         case State::FILL_UP:
             Serial.println(F("Entering: FILL_UP: "));
             digitalWrite(PUMP_RUNNING_LED_PIN, HIGH);
+            // how many cm do we need to fill up?
+            unsigned int cm = water_level - 10;
+            startTime = millis();
 
-            float level = measure();
-            Serial.println(level);
-
-            while(level > 8.0) {
+            while((millis() - startTime) < (9UL*1000*cm)) { // 1 cm in 9 seconds
                 pump_speed = analogRead(PUMP_SPEED_ANALOG_PIN);
                 pump_speed = map(pump_speed, 0, 1023, 0, 255);
                 analogWrite(PUMP_DRIVER_PIN, pump_speed);
-                delayMicroseconds(200);
-                level = measure();
-                Serial.println(level);
+                delayMicroseconds(50);
             }
+
             analogWrite(PUMP_DRIVER_PIN, 0);
             digitalWrite(PUMP_RUNNING_LED_PIN, LOW);
 
